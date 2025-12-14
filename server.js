@@ -31,7 +31,36 @@ app.use(express.json());
 
 // API Routes
 
-// TODO
+app.post("/api/cadastrar", (req, res) => {
+	const { name, phone, cep, email, password, confirm } = req.body;
+
+	if (!name || !phone || !cep || !email || !password || !confirm) {
+		return res.status(400).json({ error: "Todos os campos devem ser preenchidos." });
+	}
+
+	// TODO: demais verificações
+
+	try {
+		const isRegistered = DB.prepare(`SELECT * FROM Usuarios WHERE email = ?`).get(email);
+		if (isRegistered) {
+			return res.status(400).json({ error: "E-mail já cadastrado." });
+		}
+
+		const hashedPassword = bcrypt.hashSync(password, SALT);
+
+		const stmt = DB.prepare(`
+			INSERT INTO Usuarios (nome, telefone, CEP, email, senha)
+			VALUES (?, ?, ?, ?, ?)
+		`);
+
+		const result = stmt.run(name,phone,cep,email,hashedPassword);
+
+		return res.status(200).json({ id: result.lastInsertRowid });
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({ error: "Erro do servidor, tente novamente mais tarde." });
+	}
+});
 
 // Run app on PORT
 app.listen(PORT, () => {

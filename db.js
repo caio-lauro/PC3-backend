@@ -17,7 +17,7 @@ DB.prepare(`
         telefone TEXT NOT NULL,
         CEP TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
-        senha TEXT NOT NULL,
+        senha TEXT NOT NULL
     )
 `).run();
 
@@ -33,20 +33,20 @@ DB.prepare(`
 
 DB.prepare(`
     CREATE TABLE IF NOT EXISTS Pedidos (
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         id_usuario INTEGER NOT NULL,
         valor_total REAL NOT NULL,
-        FOREIGN KEY (id_usuario) REFERENCES (Usuarios.id)
+        FOREIGN KEY (id_usuario) REFERENCES Usuarios(id)
     )
 `).run();
 
 DB.prepare(`
-    CREATE TABLE IF NOT EXISTS Pratos-pedido (
+    CREATE TABLE IF NOT EXISTS Pratos_pedido (
         id_pedido INTEGER NOT NULL,
         id_prato INTEGER NOT NULL,
         quantidade INTEGER NOT NULL,
-        FOREIGN KEY (id_pedido) REFERENCES (Pedidos.id),
-        FOREIGN KEY (id_prato) REFERENCES (Pratos.id)
+        FOREIGN KEY (id_pedido) REFERENCES Pedidos(id),
+        FOREIGN KEY (id_prato) REFERENCES Pratos(id)
     )
 `).run();
 
