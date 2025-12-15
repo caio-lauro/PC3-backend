@@ -128,6 +128,80 @@ app.post("/api/login", (req, res) => {
 	}
 });
 
+app.get("/api/pratos", (req, res) => {
+	try {
+		const pratos = DB.prepare(`
+			SELECT * FROM Pratos ORDER BY categoria;
+		`).all();
+
+		return res.status(200).json(pratos);
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({ error: "Erro do servidor, tente novamente mais tarde." });
+	}
+});
+
+app.post("/api/adicionar", (req, res) => {
+	const { name, price, category, ingredients } = req.body;
+
+	if (!name || !price || !category || !ingredients) {
+		return res.status(400).json({ error: "Todos os campos devem ser preenchidos." });
+	}
+
+	if (!/^[\p{L} ]+$/u.test(name)) {
+		return res.status(400).json({ error: "O nome deve possuir apenas letras do alfabeto." });
+	}
+
+	if (!/^([0-9]{1,}),([0-9]{2})/.test(price)) {
+		return res.status(400).json({ error: "Preço inválido." });
+	}
+
+	if (category !== "entrada" && category !== "principal" && category !== "sobremesa") {
+		return res.status(400).json({ error: "Categoria inválida." });
+	}
+
+	const splittedIngredients = ingredients.split(',').map(ingredient => ingredient.trim());
+
+	splittedIngredients.forEach(ingredient => {
+		if (!/^[\p{L} ]+$/u.test(ingredient))
+			return res.status(400).json({ error: "Ingredientes inválidos." });
+	});
+
+	const ingredient_array = splittedIngredients.map(ingredient => ingredient.charAt(0).toUpperCase() + ingredient.slice(1));
+
+	try {
+		const floatPrice = parseFloat(price.replace(',', '.'));
+
+		const stmt = DB.prepare(`
+			INSERT INTO Pratos (nome, preco, categoria, ingredientes)
+			VALUES (?, ?, ?, ?)
+		`);
+
+		const result = stmt.run(name, floatPrice, category, ingredient_array.join(','));
+
+		return res.status(200).json({ id: result.lastInsertRowid });
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({ error: "Erro do servidor, tente novamente mais tarde." });
+	}
+});
+
+app.post("/api/remover", (req, res) => {
+	const { id } = req.body;
+
+	try {
+		const stmt = DB.prepare(`
+			DELETE FROM Pratos WHERE id = ?	
+		`);
+
+		const result = stmt.run(parseInt(id));
+		return res.status(200).json({ changes: result.changes });
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({ error: "Erro do servidor, tente novamente mais tarde." });
+	}
+});
+
 app.get("/api/me", auth, (req, res) => {
 	const user = DB.prepare(`\
 		SELECT id, email FROM Usuarios
