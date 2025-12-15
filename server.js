@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import express from "express";
 import cors from "cors";
-import path from "path";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -61,6 +60,70 @@ app.post("/api/cadastrar", (req, res) => {
 		return res.status(500).json({ error: "Erro do servidor, tente novamente mais tarde." });
 	}
 });
+
+app.post("/api/login", (req, res) => {
+	const { email, password } = req.body;
+
+	if (!email || !password) {
+		return res.status(400).json({ error: "Todos os campos devem ser preenchidos." });
+	}
+
+	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+		return res.status(400).json({ error: "E-mail inválido." });
+	}
+
+	try {
+		const user = DB.prepare(`SELECT * FROM Usuarios WHERE email = ?`).get(email);
+
+		if (!user) {
+			return res.status(401).json({ error: "E-mail e/ou senha incorreto(s)." });
+		}
+
+		const correctPassword = bcrypt.compareSync(password, user.senha);
+
+		if (!correctPassword) {
+			return res.status(401).json({ error: "E-mail e/ou senha incorreto(s)." });
+		}
+
+		const token = jwt.sign(
+			{ id: user.id },
+			JWT_SECRET
+		);
+
+		return res.json({ token });
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({ error: "Erro do servidor, tente novamente mais tarde." });
+	}
+});
+
+app.get("/api/me", auth, (req, res) => {
+	const user = DB.prepare(`\
+		SELECT id, email FROM Usuarios
+		WHERE id = ?
+	`).get(req.user.id);
+
+	res.json({ ok: true, user });
+})
+
+function auth(req, res, next) {
+	const header = req.headers.authorization;
+
+	if (!header) {
+		console.error("Token não fornecido");
+		return res.status(401).json({ error: "Token não fornecido" })
+	};
+
+	const [, token] = header.split(" ");
+
+	try {
+		const payload = jwt.verify(token, JWT_SECRET);
+		req.user = payload;
+		next();
+	} catch (error) {
+		return res.status(401).json({ error: "Token inválido" });
+	}
+}
 
 // Run app on PORT
 app.listen(PORT, () => {
