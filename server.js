@@ -37,7 +37,38 @@ app.post("/api/cadastrar", (req, res) => {
 		return res.status(400).json({ error: "Todos os campos devem ser preenchidos." });
 	}
 
-	// TODO: demais verificações
+	// Verificar nome
+	if (name.trim().length < 3) {
+		return res.status(400).json({ error: "O nome deve possuir pelo menos 3 letras." });
+	} else if (!/^[\p{L} ]+$/u.test(name)) {
+		return res.status(400).json({ error: "O nome deve possuir apenas letras do alfabeto." });
+	}
+
+	// Verificar telefone
+	const splittedNumber = phone.split(" ");
+	console.log(splittedNumber);
+	if (
+		(splittedNumber.length < 2 || splittedNumber.length > 3) ||
+		(!/^\(([1-9]{2})\)/.test(splittedNumber[0])) ||
+		(splittedNumber.length === 3 && splittedNumber[1] !== '9') ||
+		(!/^([0-9]{4})-([0-9]{4})/.test(splittedNumber.at(-1)))
+	) {
+		return res.status(400).json({ error: "Número de telefone inválido" });
+	}
+
+	// Verificar CEP
+	if (!/^([0-9]{5})-([0-9]{3})/.test(cep)) {
+		return res.status(400).json({ error: "CEP inválido" });
+	}
+
+	// Verificar e-mail
+	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+		return res.status(400).json({ error: "E-mail inválido" });
+	}
+
+	if (password !== confirm) {
+		return res.status(400).json({ error: "Senha e confirmação devem coincidir!" });
+	}
 
 	try {
 		const isRegistered = DB.prepare(`SELECT * FROM Usuarios WHERE email = ?`).get(email);
