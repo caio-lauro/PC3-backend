@@ -206,7 +206,7 @@ app.get("/api/me", auth, async (req, res) => {
 
 app.post("/api/pedir", auth, async (req, res) => {
 	try {
-		const { itens } = req.body;
+		const itens = req.body;
 
 		if (!itens || itens.length === 0) {
 			return res.status(400).json({ error: "Pedido vazio." });
@@ -244,7 +244,7 @@ app.post("/api/pedir", auth, async (req, res) => {
 app.get("/api/pedidos", auth, async (req, res) => {
 	try {
 		const pedidos = await Pedido.find({ usuario: req.user.id })
-			.populate("itens.prato", "nome preco categoria");
+			.populate("itens.prato", "nome preco");
 
 		return res.json(pedidos);
 	} catch (err) {
